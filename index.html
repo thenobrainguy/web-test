@@ -5,40 +5,52 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>test-page-by-nobrainguy</title>
   <style>
+    /* Styling für das Gesicht im Canvas */
     #faceContainer {
       display: inline-block;
       width: 64px;
       height: 64px;
-      background-color: #2b2b2b;
-      border: 2px solid #fff;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 
-        inset 0 4px 8px rgba(0, 0, 0, 0.6), /* Innenschatten für Tiefe */
-        0 4px 8px rgba(0, 0, 0, 0.3);      /* Außenschatten */
-      position: relative;
+      background-color: #2b2b2b; /* Hintergrundfarbe */
+      border: 2px solid #fff; /* Rand */
+      border-radius: 8px; /* Abgerundete Ecken */
+      overflow: hidden; /* Verhindert das Überlaufen */
+      box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.3); /* Schattierung für Tiefe */
     }
 
+    /* Canvas wird auf das Standard-Format des Minecraft-Gesichts skaliert */
     canvas {
-      width: 64px; /* Skaliert das Gesicht für klare Anzeige */
+      width: 64px;
       height: 64px;
-      image-rendering: pixelated; /* Minecraft-Stil */
+      image-rendering: pixelated; /* Für das "Minecraft"-Aussehen */
     }
   </style>
 </head>
 <body>
   <form id="skinForm">
-    <input type="text" id="username" placeholder="ingame-name" required>
-    <button type="submit">show</button>
+    <input type="text" id="username" placeholder="Minecraft-Name" required>
+    <button type="submit">Anzeigen</button>
   </form>
+  
   <div id="faceContainer">
-    <canvas id="faceCanvas" width="8" height="8"></canvas>
+    <canvas id="faceCanvas" width="64" height="64"></canvas>
+  </div>
+
+  <div id="skinContainer">
+    <img id="skinDisplay" src="" alt="Skin wird geladen..." style="display: none;">
+  </div>
+
+  <div id="info">
+    <p id="playerName"></p>
+    <p id="uuid"></p>
   </div>
 
   <script>
     const form = document.getElementById("skinForm");
     const canvas = document.getElementById("faceCanvas");
     const ctx = canvas.getContext("2d");
+    const skinDisplay = document.getElementById("skinDisplay");
+    const playerNameElem = document.getElementById("playerName");
+    const uuidElem = document.getElementById("uuid");
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -57,6 +69,10 @@
         }
         const uuidData = await uuidResponse.json();
 
+        // Spielername und UUID anzeigen
+        playerNameElem.textContent = `Spielername: ${uuidData.name}`;
+        uuidElem.textContent = `UUID: ${uuidData.id}`;
+
         // Schritt 2: Skin-Daten abrufen
         const skinResponse = await fetch(`https://sessionserver.mojang.com/session/minecraft/profile/${uuidData.id}`);
         if (!skinResponse.ok) {
@@ -68,15 +84,20 @@
         const textures = JSON.parse(atob(skinData.properties[0].value));
         const skinUrl = textures.textures.SKIN.url;
 
-        // Schritt 4: Skin laden und Gesicht anzeigen
+        // Schritt 4: Skin laden und anzeigen
         const img = new Image();
-        img.crossOrigin = "anonymous"; // Für externe Bilder erforderlich
+        img.crossOrigin = "anonymous";
         img.src = skinUrl;
 
+        // Skin anzeigen
         img.onload = () => {
           ctx.clearRect(0, 0, canvas.width, canvas.height); // Canvas leeren
-          // Zeichne nur das Gesicht (8,8 bis 15,15)
-          ctx.drawImage(img, 8, 8, 8, 8, 0, 0, 8, 8);
+          // Kopf extrahieren (8x8 bis 15x15 Pixel) und anzeigen
+          ctx.drawImage(img, 8, 8, 8, 8, 0, 0, 64, 64);
+
+          // Ganzen Skin anzeigen
+          skinDisplay.style.display = "block";
+          skinDisplay.src = skinUrl;
         };
       } catch (error) {
         alert(error.message);
