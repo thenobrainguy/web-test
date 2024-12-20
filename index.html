@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>test-page-by-nobrainguy</title>
+  <style>
+    #faceContainer {
+      display: inline-block;
+      width: 64px;
+      height: 64px;
+      background-color: #2b2b2b;
+      border: 2px solid #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 
+        inset 0 4px 8px rgba(0, 0, 0, 0.6), /* Innenschatten für Tiefe */
+        0 4px 8px rgba(0, 0, 0, 0.3);      /* Außenschatten */
+      position: relative;
+    }
+
+    canvas {
+      width: 64px; /* Skaliert das Gesicht für klare Anzeige */
+      height: 64px;
+      image-rendering: pixelated; /* Minecraft-Stil */
+    }
+  </style>
+</head>
+<body>
+  <form id="skinForm">
+    <input type="text" id="username" placeholder="ingame-name" required>
+    <button type="submit">show</button>
+  </form>
+  <div id="faceContainer">
+    <canvas id="faceCanvas" width="8" height="8"></canvas>
+  </div>
+
+  <script>
+    const form = document.getElementById("skinForm");
+    const canvas = document.getElementById("faceCanvas");
+    const ctx = canvas.getContext("2d");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const username = document.getElementById("username").value.trim();
+
+      if (!username) {
+        alert("Bitte einen Minecraft-Namen eingeben!");
+        return;
+      }
+
+      try {
+        // Schritt 1: UUID abrufen
+        const uuidResponse = await fetch(`https://api.mojang.com/users/profiles/minecraft/${username}`);
+        if (!uuidResponse.ok) {
+          throw new Error("Benutzer nicht gefunden!");
+        }
+        const uuidData = await uuidResponse.json();
+
+        // Schritt 2: Skin-Daten abrufen
+        const skinResponse = await fetch(`https://sessionserver.mojang.com/session/minecraft/profile/${uuidData.id}`);
+        if (!skinResponse.ok) {
+          throw new Error("Skin-Daten konnten nicht geladen werden!");
+        }
+        const skinData = await skinResponse.json();
+
+        // Schritt 3: Skin-URL extrahieren
+        const textures = JSON.parse(atob(skinData.properties[0].value));
+        const skinUrl = textures.textures.SKIN.url;
+
+        // Schritt 4: Skin laden und Gesicht anzeigen
+        const img = new Image();
+        img.crossOrigin = "anonymous"; // Für externe Bilder erforderlich
+        img.src = skinUrl;
+
+        img.onload = () => {
+          ctx.clearRect(0, 0, canvas.width, canvas.height); // Canvas leeren
+          // Zeichne nur das Gesicht (8,8 bis 15,15)
+          ctx.drawImage(img, 8, 8, 8, 8, 0, 0, 8, 8);
+        };
+      } catch (error) {
+        alert(error.message);
+      }
+    });
+  </script>
+</body>
+</html>
